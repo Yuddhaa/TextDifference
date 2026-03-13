@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Difference</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff-match-patch/1.0.5/index.min.js"></script>
+    <style>
+        .diff-added {
+            background-color: #dcfce7;
+            text-decoration: none;
+            color: #166534;
+        }
+
+        .diff-removed {
+            background-color: #fee2e2;
+            text-decoration: none;
+            color: #991b1b;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">TEXT<span
+                        class="text-indigo-600">DIFFERENCE</span></h1>
+                <p class="text-xl text-slate-500">Compare code snippets instantly and locally.</p>
+            </div>
+            <button onclick="clearAll()"
+                class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors">CLEAR ALL</button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Original (Old)</label>
+                <textarea id="textA"
+                    class="w-full h-64 p-4 rounded-xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm"
+                    placeholder="Paste old code here..."></textarea>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Changed (New)</label>
+                <textarea id="textB"
+                    class="w-full h-64 p-4 rounded-xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm"
+                    placeholder="Paste new code here..."></textarea>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="hidden">
+            <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Difference</h2>
+            <div id="output"
+                class="w-full p-6 rounded-xl border border-slate-200 bg-white shadow-inner font-mono text-sm leading-relaxed overflow-x-auto whitespace-pre-wrap">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textA = document.getElementById('textA');
+        const textB = document.getElementById('textB');
+        const output = document.getElementById('output');
+        const resultContainer = document.getElementById('resultContainer');
+        const dmp = new diff_match_patch();
+
+        function computeDiff() {
+            const val1 = textA.value;
+            const val2 = textB.value;
+
+            if (!val1 && !val2) {
+                resultContainer.classList.add('hidden');
+                return;
+            }
+
+            resultContainer.classList.remove('hidden');
+
+            // Generate the diff
+            const diffs = dmp.diff_main(val1, val2);
+
+            // Clean up the diff for human readability
+            dmp.diff_cleanupSemantic(diffs);
+
+            // Convert to HTML
+            let html = '';
+            diffs.forEach((part) => {
+                const type = part[0]; // 0: equal, 1: add, -1: remove
+                const text = part[1].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                if (type === 1) {
+                    html += `<span class="diff-added">${text}</span>`;
+                } else if (type === -1) {
+                    html += `<span class="diff-removed">${text}</span>`;
+                } else {
+                    html += `<span>${text}</span>`;
+                }
+            });
+
+            output.innerHTML = html;
+        }
+
+        function clearAll() {
+            textA.value = '';
+            textB.value = '';
+            computeDiff();
+        }
+
+        // Listen for input on both textareas
+        textA.addEventListener('input', computeDiff);
+        textB.addEventListener('input', computeDiff);
+    </script>
+</body>
+
+</html>
