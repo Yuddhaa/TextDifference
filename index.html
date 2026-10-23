@@ -10,10 +10,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/diff-match-patch/1.0.5/index.min.js"></script>
     <script>
-        tailwind.config = {darkMode: 'class'}
+        tailwind.config = {darkMode: 'class'};
     </script>
+
     <style>
-        /* Light mode colors */
         .diff-added {
             background-color: #dcfce7;
             color: #166534;
@@ -24,7 +24,6 @@
             color: #991b1b;
         }
 
-        /* Dark mode colors */
         .dark .diff-added {
             background-color: #064e3b;
             color: #4ade80;
@@ -38,6 +37,36 @@
         pre {
             white-space: pre-wrap;
             word-wrap: break-word;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        #backToTop {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(12px);
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease,
+                visibility 0.2s ease;
+        }
+
+        #backToTop.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            #backToTop {
+                transition: none;
+            }
         }
     </style>
 </head>
@@ -69,9 +98,11 @@
 
             <div class="flex items-center gap-4">
                 <button onclick="toggleTheme()"
-                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-indigo-500 transition-all">
+                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-indigo-500 transition-all"
+                    aria-label="Toggle dark mode">
                     <span id="themeIcon">🌙</span>
                 </button>
+
                 <button onclick="clearAll()"
                     class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-wider">
                     Clear All
@@ -81,14 +112,18 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="space-y-2">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Original (Old)</label>
+                <label for="textA" class="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Original (Old)
+                </label>
                 <textarea id="textA"
                     class="w-full h-64 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm"
                     placeholder="Paste old code here..."></textarea>
             </div>
 
             <div class="space-y-2">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Changed (New)</label>
+                <label for="textB" class="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Changed (New)
+                </label>
                 <textarea id="textB"
                     class="w-full h-64 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm"
                     placeholder="Paste new code here..."></textarea>
@@ -96,12 +131,23 @@
         </div>
 
         <div id="resultContainer" class="hidden">
-            <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Difference</h2>
+            <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                Difference
+            </h2>
             <div id="output"
                 class="w-full p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-200 shadow-inner font-mono text-sm leading-relaxed overflow-x-auto whitespace-pre-wrap">
             </div>
         </div>
     </div>
+
+    <!-- Back to Top Button -->
+    <button id="backToTop" type="button" onclick="scrollToTop()" aria-label="Back to top" title="Back to top"
+        class="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+            <path d="m18 15-6-6-6 6" />
+        </svg>
+    </button>
 
     <script>
         const textA = document.getElementById('textA');
@@ -109,6 +155,7 @@
         const output = document.getElementById('output');
         const resultContainer = document.getElementById('resultContainer');
         const themeIcon = document.getElementById('themeIcon');
+        const backToTop = document.getElementById('backToTop');
         const dmp = new diff_match_patch();
 
         function toggleTheme() {
@@ -122,6 +169,7 @@
 
             if (!val1 && !val2) {
                 resultContainer.classList.add('hidden');
+                output.innerHTML = '';
                 return;
             }
 
@@ -131,9 +179,13 @@
             dmp.diff_cleanupSemantic(diffs);
 
             let html = '';
+
             diffs.forEach((part) => {
-                const type = part[0]; // 0: equal, 1: add, -1: remove
-                const text = part[1].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const type = part[0];
+                const text = part[1]
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
 
                 if (type === 1) {
                     html += `<span class="diff-added">${text}</span>`;
@@ -153,8 +205,28 @@
             computeDiff();
         }
 
+        function updateBackToTopVisibility() {
+            if (window.scrollY > 250) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 'auto'
+                    : 'smooth'
+            });
+        }
+
         textA.addEventListener('input', computeDiff);
         textB.addEventListener('input', computeDiff);
+
+        window.addEventListener('scroll', updateBackToTopVisibility, {passive: true});
+        updateBackToTopVisibility();
     </script>
 </body>
 
